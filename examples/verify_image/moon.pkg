@@ -1,0 +1,5 @@
+import {
+  "chenliyi-cly/moonfat" @fat,
+}
+
+pkgtype(kind: "executable")
