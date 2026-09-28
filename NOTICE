@@ -1,0 +1,12 @@
+MoonFat is an independent MoonBit implementation of the FAT12/16/32
+on-disk layout described by the Microsoft FAT specification.
+
+Volume layout decisions and the overall read/write API were informed by
+rust-fatfs:
+
+  https://github.com/rafalh/rust-fatfs
+  Copyright 2017 Rafal Harabien
+  License: MIT
+
+The rust-fatfs MIT license text is reproduced in THIRD_PARTY/rust-fatfs.MIT.
+This repository does not include rust-fatfs source files.
