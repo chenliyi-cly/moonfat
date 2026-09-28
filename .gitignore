@@ -1,0 +1,8 @@
+_build/
+target/
+.mooncakes/
+*.tmp
+*.log
+_test_out.txt
+_check*.txt
+_gen_*.py
