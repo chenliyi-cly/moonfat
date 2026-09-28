@@ -1,0 +1,210 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "chenliyi-cly/moonfat"
+
+import {
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub const ATTR_ARCHIVE : Int = 0x20
+
+pub const ATTR_DIRECTORY : Int = 0x10
+
+pub const ATTR_HIDDEN : Int = 0x02
+
+pub const ATTR_LFN : Int = 0x0F
+
+pub const ATTR_READ_ONLY : Int = 0x01
+
+pub const ATTR_SYSTEM : Int = 0x04
+
+pub const ATTR_VOLUME_ID : Int = 0x08
+
+pub const DIR_ENTRY_SIZE : Int = 32
+
+pub fn default_dos_time() -> DosTime
+
+pub fn floppy_1440_options() -> FormatOptions
+
+pub fn format_fat16_small() -> Result[Volume, FatError]
+
+pub fn format_fat32_min() -> Result[Volume, FatError]
+
+pub fn format_floppy() -> Result[Volume, FatError]
+
+pub fn format_volume(FormatOptions) -> Result[Volume, FatError]
+
+pub fn hex_encode(Bytes) -> String
+
+pub fn min_fat32_options() -> FormatOptions
+
+pub fn mount(Array[Byte]) -> Result[Volume, FatError]
+
+pub fn mount_bytes(Bytes) -> Result[Volume, FatError]
+
+pub fn mount_range(Array[Byte], Int, Int) -> Result[Volume, FatError]
+
+pub fn parse_layout(Array[Byte]) -> Result[Layout, FatError]
+
+pub fn small_fat16_options() -> FormatOptions
+
+pub fn split_path(String) -> Result[Array[String], FatError]
+
+// Errors
+
+// Types and methods
+pub(all) struct DirRecord {
+  name : String
+  short_name : Bytes
+  attr : Int
+  cluster : Int
+  size : Int
+  short_offset : Int
+  lfn_offsets : Array[Int]
+  write_time : Int
+  write_date : Int
+} derive(@debug.Debug)
+pub fn DirRecord::is_dir(Self) -> Bool
+pub fn DirRecord::is_dot(Self) -> Bool
+pub fn DirRecord::is_volume_id(Self) -> Bool
+
+pub(all) struct DosTime {
+  year : Int
+  month : Int
+  day : Int
+  hour : Int
+  minute : Int
+  second : Int
+} derive(Eq, @debug.Debug)
+
+pub(all) struct Entry {
+  name : String
+  short_name : String
+  attr : Int
+  cluster : Int
+  size : Int
+  is_dir : Bool
+  write : DosTime
+} derive(@debug.Debug)
+
+pub(all) enum FatError {
+  Truncated(String, Int, Int)
+  InvalidBoot(String)
+  Unsupported(String)
+  BadCluster(Int)
+  ChainLoop(Int)
+  NotFound(String)
+  AlreadyExists(String)
+  NotDirectory(String)
+  IsDirectory(String)
+  DirectoryNotEmpty(String)
+  NoSpace
+  InvalidName(String)
+  Corrupt(String)
+  InvalidPath(String)
+  SlotExhausted
+} derive(Eq, @debug.Debug)
+pub fn FatError::code(Self) -> String
+pub fn FatError::message(Self) -> String
+pub fn FatError::render(Self) -> String
+
+pub(all) enum FatKind {
+  Fat12
+  Fat16
+  Fat32
+} derive(Eq, @debug.Debug)
+pub fn FatKind::bad_value(Self) -> Int
+pub fn FatKind::bits(Self) -> Int
+pub fn FatKind::eoc_value(Self) -> Int
+pub fn FatKind::is_bad(Self, Int) -> Bool
+pub fn FatKind::is_eoc(Self, Int) -> Bool
+pub fn FatKind::name(Self) -> String
+
+pub(all) struct FormatOptions {
+  kind : FatKind
+  bytes_per_sector : Int
+  total_sectors : Int
+  volume_label : String
+  volume_id : Int
+} derive(@debug.Debug)
+
+pub(all) struct Layout {
+  kind : FatKind
+  bytes_per_sector : Int
+  sectors_per_cluster : Int
+  reserved_sectors : Int
+  fat_count : Int
+  fat_sectors : Int
+  root_entries : Int
+  root_dir_sectors : Int
+  first_fat_sector : Int
+  first_root_sector : Int
+  first_data_sector : Int
+  cluster_count : Int
+  root_cluster : Int
+  total_sectors : Int
+  media : Byte
+  volume_id : Int
+  label : String
+  fsinfo_sector : Int
+  backup_boot_sector : Int
+} derive(@debug.Debug)
+pub fn Layout::byte_offset(Self, Int) -> Int
+pub fn Layout::bytes_per_cluster(Self) -> Int
+pub fn Layout::cluster_sector(Self, Int) -> Result[Int, FatError]
+pub fn Layout::fat_bytes(Self) -> Int
+
+pub(all) struct RawEntry {
+  offset : Int
+  name : Bytes
+  attr : Int
+  nt_res : Int
+  create_tenth : Int
+  create_time : Int
+  create_date : Int
+  access_date : Int
+  cluster : Int
+  write_time : Int
+  write_date : Int
+  size : Int
+} derive(@debug.Debug)
+pub fn RawEntry::is_deleted(Self) -> Bool
+pub fn RawEntry::is_dir(Self) -> Bool
+pub fn RawEntry::is_dot(Self) -> Bool
+pub fn RawEntry::is_end(Self) -> Bool
+pub fn RawEntry::is_lfn(Self) -> Bool
+pub fn RawEntry::is_volume_id(Self) -> Bool
+
+pub(all) struct VerifyIssue {
+  code : String
+  message : String
+  cluster : Int
+} derive(Eq, @debug.Debug)
+
+pub(all) struct Volume {
+  mut data : Array[Byte]
+  layout : Layout
+}
+pub fn Volume::boot_preview(Self) -> Result[Bytes, FatError]
+pub fn Volume::bytes_per_cluster(Self) -> Int
+pub fn Volume::cluster_count(Self) -> Int
+pub fn Volume::free_clusters(Self) -> Result[Int, FatError]
+pub fn Volume::issue_codes(Self) -> Array[String]
+pub fn Volume::kind(Self) -> FatKind
+pub fn Volume::label(Self) -> String
+pub fn Volume::list(Self, String) -> Result[Array[Entry], FatError]
+pub fn Volume::mkdir(Self, String) -> Result[Unit, FatError]
+pub fn Volume::mkdir_p(Self, String) -> Result[Unit, FatError]
+pub fn Volume::read_file(Self, String) -> Result[Bytes, FatError]
+pub fn Volume::remove(Self, String) -> Result[Unit, FatError]
+pub fn Volume::stat(Self, String) -> Result[Entry, FatError]
+pub fn Volume::to_bytes(Self) -> Bytes
+pub fn Volume::total_bytes(Self) -> Int
+pub fn Volume::verify(Self) -> Array[VerifyIssue]
+pub fn Volume::walk(Self, String) -> Result[Array[Entry], FatError]
+pub fn Volume::write_file(Self, String, Bytes) -> Result[Unit, FatError]
+
+// Type aliases
+
+// Traits
+
