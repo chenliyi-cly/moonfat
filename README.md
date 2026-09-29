@@ -18,6 +18,15 @@ MoonBit 里的 FAT12/16/32 卷编解码。给它一块 `Array[Byte]`，可以 fo
 
 ## 安装
 
+要求 MoonBit `moonc >= 0.10.14`。建议使用官方安装器，再确认版本：
+
+```text
+curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+moon version --all
+```
+
+安装项目包：
+
 ```text
 moon add chenliyi-cly/moonfat
 ```
@@ -76,18 +85,18 @@ let issues = vol.verify()
 
 ## 校验
 
-本机已跑过：
+完整验收步骤见 [docs/acceptance.md](docs/acceptance.md)。CI 在 Ubuntu 上使用 `moonc >= 0.10.14` 检查、构建、测试 `wasm-gc`、`wasm`、`js` 和 `native`，并在 `wasm-gc` 上运行三个示例。
+
+本地可按实际安装的工具链执行：
 
 ```text
-moon fmt --check
-moon check --target wasm-gc --deny-warn
+moon check --target wasm-gc
+moon build --target wasm-gc --release
 moon test --target wasm-gc
 moon run examples/inspect
 moon run examples/write_payload
 moon run examples/verify_image
 ```
-
-GitHub Actions 会在 Ubuntu 上补跑 wasm / js / native。
 
 ## 许可证
 
