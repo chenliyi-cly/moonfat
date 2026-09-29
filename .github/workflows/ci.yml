@@ -29,7 +29,7 @@ jobs:
         shell: bash
         run: |
           moon version --all
-          actual=$(moonc --version | sed -n 's/^moonc v\([0-9]*\.[0-9]*\.[0-9]*\).*/\1/p')
+          actual=$(moonc -v | sed -n 's/^v\([0-9]*\.[0-9]*\.[0-9]*\).*/\1/p')
           test -n "$actual"
           printf '%s\n' "$actual" | awk -F. '{ if ($1 < 0 || ($1 == 0 && $2 < 10) || ($1 == 0 && $2 == 10 && $3 < 14)) exit 1 }'
 
