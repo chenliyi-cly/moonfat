@@ -7,6 +7,12 @@ pub(all) enum FatKind {
 } derive(Eq, Debug)
 
 ///|
+pub extend FatKind with Eq::{equal, not_equal}
+
+///|
+pub extend FatKind with @debug.Debug::{to_repr}
+
+///|
 pub fn FatKind::name(self : FatKind) -> String {
   match self {
     Fat12 => "FAT12"
@@ -83,6 +89,9 @@ pub(all) struct Layout {
   fsinfo_sector : Int
   backup_boot_sector : Int
 } derive(Debug)
+
+///|
+pub extend Layout with @debug.Debug::{to_repr}
 
 ///|
 pub fn Layout::bytes_per_cluster(self : Layout) -> Int {

@@ -67,6 +67,7 @@ pub(all) struct DirRecord {
 pub fn DirRecord::is_dir(Self) -> Bool
 pub fn DirRecord::is_dot(Self) -> Bool
 pub fn DirRecord::is_volume_id(Self) -> Bool
+pub fn DirRecord::to_repr(Self) -> @debug.Repr
 
 pub(all) struct DosTime {
   year : Int
@@ -76,6 +77,9 @@ pub(all) struct DosTime {
   minute : Int
   second : Int
 } derive(Eq, @debug.Debug)
+pub fn DosTime::equal(Self, Self) -> Bool
+pub fn DosTime::not_equal(Self, Self) -> Bool
+pub fn DosTime::to_repr(Self) -> @debug.Repr
 
 pub(all) struct Entry {
   name : String
@@ -86,6 +90,7 @@ pub(all) struct Entry {
   is_dir : Bool
   write : DosTime
 } derive(@debug.Debug)
+pub fn Entry::to_repr(Self) -> @debug.Repr
 
 pub(all) enum FatError {
   Truncated(String, Int, Int)
@@ -105,8 +110,11 @@ pub(all) enum FatError {
   SlotExhausted
 } derive(Eq, @debug.Debug)
 pub fn FatError::code(Self) -> String
+pub fn FatError::equal(Self, Self) -> Bool
 pub fn FatError::message(Self) -> String
+pub fn FatError::not_equal(Self, Self) -> Bool
 pub fn FatError::render(Self) -> String
+pub fn FatError::to_repr(Self) -> @debug.Repr
 
 pub(all) enum FatKind {
   Fat12
@@ -116,9 +124,12 @@ pub(all) enum FatKind {
 pub fn FatKind::bad_value(Self) -> Int
 pub fn FatKind::bits(Self) -> Int
 pub fn FatKind::eoc_value(Self) -> Int
+pub fn FatKind::equal(Self, Self) -> Bool
 pub fn FatKind::is_bad(Self, Int) -> Bool
 pub fn FatKind::is_eoc(Self, Int) -> Bool
 pub fn FatKind::name(Self) -> String
+pub fn FatKind::not_equal(Self, Self) -> Bool
+pub fn FatKind::to_repr(Self) -> @debug.Repr
 
 pub(all) struct FormatOptions {
   kind : FatKind
@@ -127,6 +138,7 @@ pub(all) struct FormatOptions {
   volume_label : String
   volume_id : Int
 } derive(@debug.Debug)
+pub fn FormatOptions::to_repr(Self) -> @debug.Repr
 
 pub(all) struct Layout {
   kind : FatKind
@@ -153,6 +165,7 @@ pub fn Layout::byte_offset(Self, Int) -> Int
 pub fn Layout::bytes_per_cluster(Self) -> Int
 pub fn Layout::cluster_sector(Self, Int) -> Result[Int, FatError]
 pub fn Layout::fat_bytes(Self) -> Int
+pub fn Layout::to_repr(Self) -> @debug.Repr
 
 pub(all) struct RawEntry {
   offset : Int
@@ -174,12 +187,16 @@ pub fn RawEntry::is_dot(Self) -> Bool
 pub fn RawEntry::is_end(Self) -> Bool
 pub fn RawEntry::is_lfn(Self) -> Bool
 pub fn RawEntry::is_volume_id(Self) -> Bool
+pub fn RawEntry::to_repr(Self) -> @debug.Repr
 
 pub(all) struct VerifyIssue {
   code : String
   message : String
   cluster : Int
 } derive(Eq, @debug.Debug)
+pub fn VerifyIssue::equal(Self, Self) -> Bool
+pub fn VerifyIssue::not_equal(Self, Self) -> Bool
+pub fn VerifyIssue::to_repr(Self) -> @debug.Repr
 
 pub(all) struct Volume {
   mut data : Array[Byte]
@@ -207,4 +224,3 @@ pub fn Volume::write_file(Self, String, Bytes) -> Result[Unit, FatError]
 // Type aliases
 
 // Traits
-

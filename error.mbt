@@ -19,6 +19,12 @@ pub(all) enum FatError {
 } derive(Eq, Debug)
 
 ///|
+pub extend FatError with Eq::{equal, not_equal}
+
+///|
+pub extend FatError with @debug.Debug::{to_repr}
+
+///|
 pub fn FatError::code(self : FatError) -> String {
   match self {
     Truncated(_) => "FAT001"

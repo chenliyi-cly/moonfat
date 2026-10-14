@@ -11,7 +11,7 @@ pub fn mount(data : Array[Byte]) -> Result[Volume, FatError] {
     Err(err) => return Err(err)
     Ok(ok_val) => ok_val
   }
-  Ok({ data, layout })
+  Ok({ data, layout, })
 }
 
 ///|

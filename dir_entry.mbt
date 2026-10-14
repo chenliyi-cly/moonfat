@@ -39,6 +39,9 @@ pub(all) struct RawEntry {
 } derive(Debug)
 
 ///|
+pub extend RawEntry with @debug.Debug::{to_repr}
+
+///|
 pub fn RawEntry::is_end(self : RawEntry) -> Bool {
   self.name.length() > 0 && self.name[0] == b'\x00'
 }
@@ -316,6 +319,9 @@ pub(all) struct DirRecord {
 } derive(Debug)
 
 ///|
+pub extend DirRecord with @debug.Debug::{to_repr}
+
+///|
 pub fn DirRecord::is_dir(self : DirRecord) -> Bool {
   (self.attr & ATTR_DIRECTORY) != 0
 }
@@ -341,6 +347,9 @@ pub(all) struct Entry {
   is_dir : Bool
   write : DosTime
 } derive(Debug)
+
+///|
+pub extend Entry with @debug.Debug::{to_repr}
 
 ///|
 fn record_to_entry(record : DirRecord) -> Entry {

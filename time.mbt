@@ -10,8 +10,14 @@ pub(all) struct DosTime {
 } derive(Eq, Debug)
 
 ///|
+pub extend DosTime with Eq::{equal, not_equal}
+
+///|
+pub extend DosTime with @debug.Debug::{to_repr}
+
+///|
 pub fn default_dos_time() -> DosTime {
-  { year: 2026, month: 9, day: 1, hour: 12, minute: 0, second: 0 }
+  { year: 2026, month: 9, day: 1, hour: 12, minute: 0, second: 0, }
 }
 
 ///|

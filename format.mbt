@@ -9,6 +9,9 @@ pub(all) struct FormatOptions {
 } derive(Debug)
 
 ///|
+pub extend FormatOptions with @debug.Debug::{to_repr}
+
+///|
 pub fn floppy_1440_options() -> FormatOptions {
   {
     kind: Fat12,
@@ -247,7 +250,7 @@ pub fn format_volume(options : FormatOptions) -> Result[Volume, FatError] {
       Ok(_) => ()
     }
   }
-  Ok({ data, layout })
+  Ok({ data, layout, })
 }
 
 ///|

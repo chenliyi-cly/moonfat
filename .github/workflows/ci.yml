@@ -43,8 +43,8 @@ jobs:
         run: moon test --target ${{ matrix.target }}
 
       - name: Run examples
-        if: matrix.target == 'wasm-gc'
         run: |
-          moon run examples/inspect
-          moon run examples/write_payload
-          moon run examples/verify_image
+          moon run examples/inspect --target ${{ matrix.target }}
+          moon run examples/write_payload --target ${{ matrix.target }}
+          moon run examples/verify_image --target ${{ matrix.target }}
+          moon run examples/fat32_roundtrip --target ${{ matrix.target }}

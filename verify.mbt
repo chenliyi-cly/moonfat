@@ -7,8 +7,14 @@ pub(all) struct VerifyIssue {
 } derive(Eq, Debug)
 
 ///|
+pub extend VerifyIssue with Eq::{equal, not_equal}
+
+///|
+pub extend VerifyIssue with @debug.Debug::{to_repr}
+
+///|
 fn issue(code : String, message : String, cluster : Int) -> VerifyIssue {
-  { code, message, cluster }
+  { code, message, cluster, }
 }
 
 ///|
@@ -29,10 +35,15 @@ pub fn Volume::verify(self : Volume) -> Array[VerifyIssue] {
         0,
       ),
     )
+    // Stop before FAT-copy comparison or directory indexing on a short image.
+    if self.data.length() < self.total_bytes() {
+      return issues
+    }
   }
   match self.layout.kind {
     Fat32 =>
-      if self.layout.root_cluster < 2 {
+      if self.layout.root_cluster < 2 ||
+        self.layout.root_cluster > self.layout.cluster_count + 1 {
         issues.push(
           issue(
             "VFY003",
@@ -45,6 +56,22 @@ pub fn Volume::verify(self : Volume) -> Array[VerifyIssue] {
   }
   let used = Array::make(self.layout.cluster_count + 2, 0)
   self.verify_fat(issues, used)
+  // FAT32 stores the root in an ordinary cluster chain, without a parent entry.
+  // Claim every root cluster before traversing directory entries.
+  if self.layout.kind == Fat32 {
+    match follow_chain(self.data, self.layout, self.layout.root_cluster) {
+      Err(err) => {
+        issues.push(
+          issue("VFY020", "/: \{err.message()}", self.layout.root_cluster),
+        )
+        self.verify_lost_clusters(issues, used)
+        return issues
+      }
+      Ok(chain) => {
+        let _ = self.mark_chain(chain, "/", issues, used)
+      }
+    }
+  }
   self.verify_tree(root_cluster_of(self.layout), "/", issues, used)
   self.verify_lost_clusters(issues, used)
   issues
@@ -126,84 +153,102 @@ fn Volume::verify_tree(
   issues : Array[VerifyIssue],
   used : Array[Int],
 ) -> Unit {
-  match read_directory(self.data, self.layout, dir_cluster) {
-    Err(err) =>
-      issues.push(issue("VFY020", "\{path}: \{err.message()}", dir_cluster))
-    Ok(records) =>
-      for i = 0; i < records.length(); i = i + 1 {
-        let record = records[i]
-        if record.is_dot() {
-          continue
-        }
-        if record.lfn_offsets.length() > 0 {
-          let checksum = lfn_checksum(record.short_name)
-          for j = 0; j < record.lfn_offsets.length(); j = j + 1 {
-            match u8_at(self.data, record.lfn_offsets[j] + 13) {
-              Err(_) =>
-                issues.push(
-                  issue("VFY021", "truncated LFN at \{path}", dir_cluster),
-                )
-              Ok(found) =>
-                if found != checksum {
+  // An explicit worklist bounds traversal even for deeply nested images.
+  let pending : Array[(Int, String)] = [(dir_cluster, path)]
+  let mut next = 0
+  while next < pending.length() {
+    let (dir_cluster, path) = pending[next]
+    next = next + 1
+    match read_directory(self.data, self.layout, dir_cluster) {
+      Err(err) =>
+        issues.push(issue("VFY020", "\{path}: \{err.message()}", dir_cluster))
+      Ok(records) =>
+        for i = 0; i < records.length(); i = i + 1 {
+          let record = records[i]
+          if record.is_dot() {
+            continue
+          }
+          if record.lfn_offsets.length() > 0 {
+            let checksum = lfn_checksum(record.short_name)
+            for j = 0; j < record.lfn_offsets.length(); j = j + 1 {
+              match u8_at(self.data, record.lfn_offsets[j] + 13) {
+                Err(_) =>
                   issues.push(
-                    issue(
-                      "VFY022",
-                      "\{path}/\{record.name} LFN checksum mismatch",
-                      dir_cluster,
-                    ),
+                    issue("VFY021", "truncated LFN at \{path}", dir_cluster),
                   )
-                }
+                Ok(found) =>
+                  if found != checksum {
+                    issues.push(
+                      issue(
+                        "VFY022",
+                        "\{path}/\{record.name} LFN checksum mismatch",
+                        dir_cluster,
+                      ),
+                    )
+                  }
+              }
             }
           }
-        }
-        if record.cluster == 0 &&
-          record.size > 0 &&
-          !record.is_dir() &&
-          !record.is_volume_id() {
-          issues.push(
-            issue(
-              "VFY023",
-              "\{path}/\{record.name} has size \{record.size} but cluster 0",
-              0,
-            ),
-          )
-        }
-        if record.cluster != 0 && !record.is_volume_id() {
-          match follow_chain(self.data, self.layout, record.cluster) {
-            Err(err) =>
-              issues.push(
-                issue(
-                  "VFY024",
-                  "\{path}/\{record.name}: \{err.message()}",
-                  record.cluster,
-                ),
-              )
-            Ok(chain) => {
-              self.mark_chain(chain, path + "/" + record.name, issues, used)
-              if !record.is_dir() {
-                let capacity = chain_byte_length(self.layout, chain)
-                if record.size > capacity {
-                  issues.push(
-                    issue(
-                      "VFY025",
-                      "\{path}/\{record.name} size \{record.size} exceeds chain \{capacity}",
-                      record.cluster,
-                    ),
-                  )
-                }
-              }
-              if record.is_dir() {
-                self.verify_tree(
-                  record.cluster,
+          if record.cluster == 0 &&
+            record.size > 0 &&
+            !record.is_dir() &&
+            !record.is_volume_id() {
+            issues.push(
+              issue(
+                "VFY023",
+                "\{path}/\{record.name} has size \{record.size} but cluster 0",
+                0,
+              ),
+            )
+          }
+          if record.is_dir() && record.cluster == 0 && !record.is_volume_id() {
+            issues.push(
+              issue(
+                "VFY026",
+                "\{path}/\{record.name} directory has cluster 0",
+                0,
+              ),
+            )
+          }
+          if record.cluster != 0 && !record.is_volume_id() {
+            match follow_chain(self.data, self.layout, record.cluster) {
+              Err(err) =>
+                issues.push(
+                  issue(
+                    "VFY024",
+                    "\{path}/\{record.name}: \{err.message()}",
+                    record.cluster,
+                  ),
+                )
+              Ok(chain) => {
+                let exclusive = self.mark_chain(
+                  chain,
                   join_path(path, record.name),
                   issues,
                   used,
                 )
+                if !record.is_dir() {
+                  let capacity = chain_byte_length(self.layout, chain)
+                  if record.size > capacity {
+                    issues.push(
+                      issue(
+                        "VFY025",
+                        "\{path}/\{record.name} size \{record.size} exceeds chain \{capacity}",
+                        record.cluster,
+                      ),
+                    )
+                  }
+                }
+                // A shared chain can point to an ancestor or to this directory.
+                // Report the cross-link, but never expand it a second time.
+                if record.is_dir() && exclusive {
+                  pending.push((record.cluster, join_path(path, record.name)))
+                }
               }
             }
           }
         }
-      }
+    }
   }
 }
 
@@ -214,21 +259,25 @@ fn Volume::mark_chain(
   path : String,
   issues : Array[VerifyIssue],
   used : Array[Int],
-) -> Unit {
+) -> Bool {
   let _ = self
+  let mut exclusive = true
   for i = 0; i < chain.length(); i = i + 1 {
     let cluster = chain[i]
     if cluster < 2 || cluster >= used.length() {
       issues.push(
         issue("VFY030", "\{path} uses invalid cluster \{cluster}", cluster),
       )
+      exclusive = false
       continue
     }
     if used[cluster] == 3 {
+      exclusive = false
       issues.push(
         issue("VFY031", "\{path} cross-links cluster \{cluster}", cluster),
       )
     } else if used[cluster] == 2 {
+      exclusive = false
       issues.push(
         issue("VFY032", "\{path} uses a bad cluster \{cluster}", cluster),
       )
@@ -236,6 +285,7 @@ fn Volume::mark_chain(
       used[cluster] = 3
     }
   }
+  exclusive
 }
 
 ///|

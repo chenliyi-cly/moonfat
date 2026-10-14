@@ -30,6 +30,7 @@ MoonFat 对内存中的 FAT12、FAT16、FAT32 卷执行格式化和挂载，支�
 moon run examples/inspect
 moon run examples/write_payload
 moon run examples/verify_image
+moon run examples/fat32_roundtrip
 ```
 
 `inspect` 检查 EFI 目录树，`write_payload` 把 payload 写入镜像后重新挂载读取，`verify_image` 修改 FAT 副本并输出稳定的校验问题码。
@@ -42,10 +43,16 @@ moon run examples/verify_image
 2. `moon check`；
 3. `moon build --release`；
 4. `moon test`；
-5. 在 `wasm-gc` 目标运行三个示例。
+5. 在每个目标运行三个原有示例和 FAT32 格式化、写入、重挂载示例。
 
 工作流文件： [.github/workflows/ci.yml](../.github/workflows/ci.yml)。
 
+## FAT32 回归怎么验
+
+执行 `moon test --filter '*FAT32*'`。测试实际分配完整 FAT32 镜像，覆盖空卷与重新挂载、跨簇文件写入、根目录扩容、非 2 号根簇、真实丢失簇、损坏根链，以及文件引用根簇的交叉链接。`moon run examples/fat32_roundtrip` 给出可独立运行的复现入口，空卷和写入后重挂载都应输出 0 条问题，文件字节必须与输入一致。
+
+另外注入目录自环、祖先循环、目录别名、起始簇为 0 的目录和截断镜像，确认校验能返回问题码。真实的丢失簇、交叉链接和 FAT 副本差异仍应被检出。根目录扩容测试在校验前后比较整卷字节，确认它保持只读。
+
 ## MoonCakes
 
-包已发布到 MoonCakes：`chenliyi-cly/moonfat`，版本 `0.1.0`。发布前使用 `moon publish --dry-run` 验证打包结果，正式发布使用同一包名和版本。
+已发布版本为 `0.1.1`。本轮修改先在源码中验证；MoonCakes 更新由参赛者确认账号登录后再进行。

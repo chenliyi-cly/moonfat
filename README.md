@@ -14,7 +14,7 @@ MoonBit 里的 FAT12/16/32 卷编解码。给它一块 `Array[Byte]`，可以 fo
 
 ## 明确不做
 
-不管 exFAT，不挂 FUSE，不解析 GPT/MBR，也不把损坏的 FAT 写回去。默认测试不算 34MB 的最小 FAT32 镜像，只测表项打包和 `compute_layout`。
+不管 exFAT，不挂 FUSE，不解析 GPT/MBR，也不把损坏的 FAT 写回去。测试包含 `format_fat32_min` 创建的完整 FAT32 镜像，检查空卷、文件写入、重新挂载和根目录扩容。
 
 ## 安装
 
@@ -81,11 +81,26 @@ let names = vol.list("/").unwrap()
 let issues = vol.verify()
 ```
 
-1.44MB 软盘和最小 FAT16 卷也有现成入口：`format_floppy`、`format_fat16_small`。`format_fat32_min` 会得到约 34MB 的镜像，适合显式调用，不要放进默认 CI。
+1.44MB 软盘和最小 FAT16 卷也有现成入口：`format_floppy`、`format_fat16_small`。`format_fat32_min` 会得到 34,089,472 字节的镜像。FAT32 完整卷回归测试纳入默认测试和四个目标的 CI。
+
+## FAT32 格式化与重新挂载
+
+```text
+moon run examples/fat32_roundtrip
+```
+
+示例先用 `format_fat32_min` 创建空卷并校验，再写入跨簇的 `/EFI/BOOT/BOOTX64.EFI`，导出镜像、重新挂载、逐字节核对文件。断言失败会直接终止运行。正常输出：
+
+```text
+empty FAT32: 0 issues
+remount FAT32: 0 issues, payload 529 bytes
+```
+
+`verify` 将 FAT32 根目录的整条簇链纳入可达性检查，包括扩容后新增的根目录簇。真正未被目录引用的已分配簇仍报 `VFY040`；共享簇链报 `VFY031`。目录指向自身或祖先时会停止展开并报告交叉链接，普通目录的起始簇为 0 时报告 `VFY026`。校验不会修改镜像。
 
 ## 校验
 
-完整验收步骤见 [docs/acceptance.md](docs/acceptance.md)。CI 在 Ubuntu 上使用 `moonc >= 0.10.14` 检查、构建、测试 `wasm-gc`、`wasm`、`js` 和 `native`，并在 `wasm-gc` 上运行三个示例。
+完整验收步骤见 [docs/acceptance.md](docs/acceptance.md)。CI 在 Ubuntu 上使用 `moonc >= 0.10.14` 检查、构建、测试 `wasm-gc`、`wasm`、`js` 和 `native`，并在各目标运行原有三个示例和 FAT32 重挂载示例。
 
 本地可按实际安装的工具链执行：
 
