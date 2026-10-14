@@ -55,4 +55,4 @@ moon run examples/fat32_roundtrip
 
 ## MoonCakes
 
-已发布版本为 `0.1.1`。本轮修改先在源码中验证；MoonCakes 更新由参赛者确认账号登录后再进行。
+本轮 FAT32 校验修复对应版本 `0.1.2`。可用 `moon add chenliyi-cly/moonfat@0.1.2` 安装，再运行 FAT32 重新挂载示例复验。
